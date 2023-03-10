@@ -1,0 +1,6 @@
+# vim swap and session files
+*.swp
+*.vim
+
+# clangd completer cache
+.cache/

@@ -1,0 +1,5 @@
+project('Captcha', 'c', default_options : 'c_std=c11', version : '0.1')
+subdir('project_server')
+subdir('project_client')
+executable('server', server_source_files)
+executable('client', client_source_files)
