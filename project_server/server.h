@@ -7,6 +7,9 @@
 // network includes
 #include <arpa/inet.h>
 
+// project includes
+#include "request_type.h"
+
 typedef struct {
     int server_socket;
     struct sockaddr_in server_address;
@@ -22,8 +25,6 @@ typedef struct {
     uint32_t fail_count;
     const char *fail_message;
 } CaptchaServer;
-
-typedef enum { QUIT, STATS, CAPTCHA_MATH, CAPTCHA_EVEN_ODD } REQUEST_TYPE ;
 
 CaptchaServer captcha_server_new(const char *address, int port);
 void captcha_server_run(CaptchaServer *self);

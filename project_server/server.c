@@ -72,8 +72,14 @@ void captcha_server_run(CaptchaServer *self) {
                 captcha_server_send_even_odd_captcha(self);
                 break;
             }
+            case -1: {
+                break;
+            }
+            case 0: {
+                break;
+            }
             default: {
-                fprintf(stderr, "Error: Invalid option code: %d", buffer);
+                fprintf(stderr, "Error: Invalid option code: %d\n", buffer);
                 break;
             }
         }
@@ -96,7 +102,7 @@ bool captcha_server_accept(CaptchaServer *self) {
 
 void captcha_server_send_math_captcha(CaptchaServer *self) {
     if (!self->connection_is_active) {
-        fprintf(stderr, "Error: Trying to send captcha while no connection is active");
+        fprintf(stderr, "Error: Trying to send captcha while no connection is active\n");
         exit(EXIT_FAILURE);
     }
 
@@ -127,7 +133,7 @@ void captcha_server_send_math_captcha(CaptchaServer *self) {
 
 void captcha_server_send_even_odd_captcha(CaptchaServer *self) {
     if (!self->connection_is_active) {
-        fprintf(stderr, "Error: Trying to send captcha while no connection is active");
+        fprintf(stderr, "Error: Trying to send captcha while no connection is active\n");
         exit(EXIT_FAILURE);
     }
 
@@ -138,7 +144,7 @@ void captcha_server_send_even_odd_captcha(CaptchaServer *self) {
     char *message = malloc(len);
     message[0] = '\0';
     if (message == NULL) {
-        fprintf(stderr, "Bad alloc");
+        fprintf(stderr, "Bad alloc\n");
         exit(EXIT_FAILURE);
     }
 
@@ -153,7 +159,7 @@ void captcha_server_send_even_odd_captcha(CaptchaServer *self) {
 
     char *response_buffer = malloc(CHALLANGE_SIZE + 1);
     if (response_buffer == NULL) {
-        fprintf(stderr, "Bad alloc");
+        fprintf(stderr, "Bad alloc\n");
         exit(EXIT_FAILURE);
     }
 
