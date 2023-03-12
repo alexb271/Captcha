@@ -1,1 +1,1 @@
-server_source_files = files('server.c')
+server_source_files = files('main.c', 'server.c')

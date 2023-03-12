@@ -24,7 +24,7 @@ int main() {
     }
 
     server_address.sin_family = AF_INET;
-    server_address.sin_port= htons(8080);
+    server_address.sin_port= htons(9080);
     server_address.sin_addr.s_addr = inet_addr("127.0.0.1");
     memset(server_address.sin_zero, '\0', sizeof(server_address.sin_zero));
 
@@ -41,6 +41,10 @@ int main() {
     printf("%s\n", buffer);
 
     fgets(buffer, BUFSIZE, stdin);
+    // remove trailing newline
+    if (buffer[strlen(buffer) - 1] == '\n') {
+        buffer[strlen(buffer) - 1] = '\0';
+    }
     send(client_socket_descriptor, buffer, BUFSIZE, 0);
 
     // clear the buffer

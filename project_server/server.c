@@ -1,67 +1,121 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+// standard library
+#include <ctype.h>
 
-// network includes
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
+// project
+#include "server.h"
 
-#define BUFSIZE 1024
+CaptchaServer captcha_server_new(const char *address, int port) {
+    CaptchaServer server;
 
-int main() {
-    const char *hello = "Hello from server";
-    const char *confirm = "Message received";
-    char buffer[BUFSIZE] = {'\0'};
-    int result;
-
-    int server_socket_descriptor;
-    struct sockaddr_in server_address;
-
-    int incoming_socket_desriptor;
-    struct sockaddr_storage incoming_address;
-    socklen_t size_of_incoming_address = sizeof(incoming_address);
-
-    server_socket_descriptor = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_socket_descriptor == -1) {
+    server.server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (server.server_socket == -1) {
         perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
 
-    server_address.sin_family = AF_INET;
-    server_address.sin_port= htons(8080);
-    server_address.sin_addr.s_addr = inet_addr("127.0.0.1");
-    memset(server_address.sin_zero, '\0', sizeof(server_address.sin_zero));
+    server.server_address.sin_family = AF_INET;
+    server.server_address.sin_addr.s_addr = inet_addr(address);
+    server.server_address.sin_port = htons(port);
+    memset(server.server_address.sin_zero, '\0', sizeof(server.server_address.sin_zero));
 
-    result = bind(server_socket_descriptor,
-                  (struct sockaddr *)&server_address,
-                  sizeof(server_address));
+    int result;
+    result = bind(server.server_socket,
+                  (struct sockaddr *)&server.server_address,
+                  sizeof(server.server_address));
 
     if (result != 0) {
         perror("Bind failed");
         exit(EXIT_FAILURE);
     }
 
-    result = listen(server_socket_descriptor, 5);
+    result = listen(server.server_socket, 3);
 
     if (result != 0) {
         perror("Listen failed");
         exit(EXIT_FAILURE);
     }
 
-    incoming_socket_desriptor = accept(server_socket_descriptor,
-                                       (struct sockaddr *)&incoming_address,
-                                       &size_of_incoming_address);
+    server.size_of_incoming_address = sizeof(server.incoming_address);
+    server.connection_is_active = false;
+    server.success_count = 0;
+    server.success_message = "Success";
+    server.fail_count = 0;
+    server.fail_message = "Failed";
 
-    send(incoming_socket_desriptor, hello, strlen(hello), 0);
-    read(incoming_socket_desriptor, buffer, BUFSIZE);
+    return server;
+}
 
-    printf("%s\n", buffer);
+bool captcha_server_accept(CaptchaServer *server) {
+    server->incoming_socket = accept(server->server_socket,
+                                     (struct sockaddr *)&server->incoming_address,
+                                     &server->size_of_incoming_address);
 
-    if (strlen(buffer) > 0) {
-        send(incoming_socket_desriptor, confirm, strlen(confirm), 0);
+    if (server->incoming_socket == -1) {
+        server->connection_is_active = false;
+        return false;
     }
 
-    return 0;
+    server->connection_is_active = true;
+    return true;
 }
+
+static void get_two_random_numbers(uint8_t *num1, uint8_t *num2) {
+    FILE *rng = fopen("/dev/urandom", "r");
+
+    if (rng == NULL) {
+        fprintf(stderr, "Error: unable to open /dev/urandom");
+        fclose(rng);
+        exit(EXIT_FAILURE);
+    }
+
+    *num1 = fgetc(rng);
+    *num2 = fgetc(rng);
+    fclose(rng);
+}
+
+static bool valid_number_format(const char *str, size_t len) {
+    bool valid_format = true;
+
+    for (size_t i = 0; i < len; i++) {
+        if (str[i] == '\0') {
+            break;
+        }
+        if (!isdigit(str[i])) {
+            valid_format = false;
+            break;
+        }
+    }
+
+    return valid_format;
+}
+
+void captcha_server_send_math_captcha(CaptchaServer *server) {
+    if (!server->connection_is_active) {
+        fprintf(stderr, "Error: Trying to send captcha while no connection is active");
+        exit(EXIT_FAILURE);
+    }
+
+    uint8_t num1, num2;
+    get_two_random_numbers(&num1, &num2);
+    int math_captcha_result = num1 + num2;
+
+    size_t message_buffer_size = 10;
+    char message_buffer[message_buffer_size];
+    sprintf(message_buffer, "%d + %d", num1, num2);
+    send(server->incoming_socket, message_buffer, strlen(message_buffer), 0);
+
+    recv(server->incoming_socket, message_buffer, message_buffer_size, 0);
+
+    if (valid_number_format(message_buffer, message_buffer_size) &&
+        atoi(message_buffer) == math_captcha_result)
+    {
+        server->success_count += 1;
+        send(server->incoming_socket, server->success_message, strlen(server->success_message), 0);
+    }
+    else {
+        server->fail_count += 1;
+        send(server->incoming_socket, server->fail_message, strlen(server->fail_message), 0);
+    }
+}
+
+
