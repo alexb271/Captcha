@@ -19,6 +19,30 @@ void get_two_random_numbers(uint8_t *num1, uint8_t *num2) {
     fclose(rng);
 }
 
+EvenOddChallange generate_even_odd_challange() {
+    FILE *rng = fopen("/dev/urandom", "r");
+
+    if (rng == NULL) {
+        fprintf(stderr, "Error: unable to open /dev/urandom");
+        fclose(rng);
+        exit(EXIT_FAILURE);
+    }
+
+    EvenOddChallange challange;
+    for (size_t i = 0; i < CHALLANGE_SIZE; i++) {
+        challange.numbers[i] = fgetc(rng);
+        if (challange.numbers[i] % 2 == 0) {
+            challange.mask[i] = 0;
+        }
+        else {
+            challange.mask[i] = 1;
+        }
+    }
+
+    fclose(rng);
+    return challange;
+}
+
 bool valid_number_format(const char *str, size_t len) {
     bool valid_format = true;
 

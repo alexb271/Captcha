@@ -100,6 +100,54 @@ void captcha_server_send_math_captcha(CaptchaServer *self) {
     }
 }
 
+void captcha_server_send_even_odd_captcha(CaptchaServer *self) {
+    if (!self->connection_is_active) {
+        fprintf(stderr, "Error: Trying to send captcha while no connection is active");
+        exit(EXIT_FAILURE);
+    }
+
+    EvenOddChallange challange = generate_even_odd_challange();
+
+    // every number is max 3 characters plus a comma, which is 4.
+    size_t len = (CHALLANGE_SIZE * 4) + 1;
+    char *message = malloc(len);
+    message[0] = '\0';
+    if (message == NULL) {
+        fprintf(stderr, "Bad alloc");
+        exit(EXIT_FAILURE);
+    }
+
+    char buffer[5];
+    for (size_t i = 0; i < CHALLANGE_SIZE; i++) {
+        sprintf(buffer, "%d,", challange.numbers[i]);
+        strcat(message, buffer);
+    }
+
+    send(self->incoming_socket, message, strlen(message), 0);
+    free(message);
+
+    char *response_buffer = malloc(CHALLANGE_SIZE + 1);
+    if (response_buffer == NULL) {
+        fprintf(stderr, "Bad alloc");
+        exit(EXIT_FAILURE);
+    }
+
+    recv(self->incoming_socket, response_buffer, CHALLANGE_SIZE + 1, 0);
+    for (size_t i = 0; i < CHALLANGE_SIZE; i++) {
+        if (response_buffer[i] - 48 != challange.mask[i]) {
+            self->fail_count += 1;
+            captcha_server_write_stats_to_file(self);
+            send(self->incoming_socket, self->fail_message, strlen(self->fail_message), 0);
+            break;
+        }
+    }
+    self->success_count += 1;
+    captcha_server_write_stats_to_file(self);
+    send(self->incoming_socket, self->success_message, strlen(self->success_message), 0);
+
+    free(response_buffer);
+}
+
 void captcha_server_write_stats_to_file(const CaptchaServer *self) {
     FILE *stat_file = fopen(self->stat_file_path, "w");
     if (stat_file == NULL) {
