@@ -8,6 +8,7 @@
 
 // project includes
 #include "client.h"
+#include "../project_server/request_type.h"
 
 CaptchaClient captcha_client_new(const char *address, int port) {
     CaptchaClient client;
@@ -40,6 +41,8 @@ CaptchaClient captcha_client_new(const char *address, int port) {
 }
 
 void captcha_client_disconnect(CaptchaClient *self) {
+    char message = DISCONNECT;
+    send(self->client_socket, &message, 1, 0);
     shutdown(self->client_socket, 3);
 }
 

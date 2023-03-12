@@ -32,15 +32,45 @@ CaptchaSelectBox captcha_select_box_new();
 void captcha_select_box_set_stat_string(CaptchaSelectBox *self, const char *stat_string);
 
 typedef struct {
+    GtkWidget *box;
+    GtkWidget *task_label;
+    GtkWidget *answer_spin_button;
+    GtkWidget *submit_button;
+} CaptchaAdditionBox;
+
+CaptchaAdditionBox captcha_addition_box_new();
+void captcha_addition_box_set_task(CaptchaAdditionBox *self, const char *task);
+
+typedef struct {
+    GtkWidget *box;
+    GtkWidget *result_label;
+    GtkWidget *back_button;
+} CaptchaResultBox;
+
+CaptchaResultBox captcha_result_box_new();
+void captcha_result_box_set_result(CaptchaResultBox *self, const char *result);
+
+typedef struct {
     GtkWidget *window;
     GtkWidget *main_box;
+    GtkWidget *close_blocked_label;
     ConnectBox connect_box;
     CaptchaSelectBox captcha_select_box;
+    CaptchaAdditionBox captcha_addition_box;
+    CaptchaResultBox captcha_result_box;
 
     CaptchaClient client;
+    bool captcha_in_progress;
 } MainWindow;
 
 MainWindow main_window_new(GtkApplication *app);
 void main_window_present(const MainWindow *self);
-void main_window_on_connect_button_clicked(GtkButton *self, gpointer *user_data);
 void main_window_show_captcha_select(MainWindow *self);
+void main_window_show_captcha_addition(MainWindow *self);
+void main_window_show_captcha_result(MainWindow *self);
+void main_window_on_connect_button_clicked(GtkButton *self, gpointer *user_data);
+void main_window_on_captcha_addition_button_clicked(GtkButton *self, gpointer *user_data);
+void main_window_on_captcha_addition_submit_button_clicked(GtkButton *self, gpointer *user_data);
+void main_window_on_captcha_result_back_button_clicked(GtkButton *self, gpointer *user_data);
+
+gboolean main_window_on_close_request(GtkWindow *self, gpointer *user_data);

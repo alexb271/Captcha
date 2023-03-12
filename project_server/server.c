@@ -11,6 +11,8 @@
 #include "server.h"
 #include "util_functions.h"
 
+#define MATH_BUFFER_SIZE 10
+
 CaptchaServer captcha_server_new(const char *address, int port) {
     CaptchaServer server;
 
@@ -55,32 +57,43 @@ CaptchaServer captcha_server_new(const char *address, int port) {
 
 void captcha_server_run(CaptchaServer *self) {
     while (captcha_server_accept(self)) {
-        char buffer;
-        recv(self->incoming_socket, &buffer, 1, 0);
+        bool disconnected = false;
+        while(!disconnected) {
+            char buffer;
+            recv(self->incoming_socket, &buffer, 1, 0);
 
-        switch(buffer) {
-            case QUIT: return;
-            case STATS: {
-                captcha_server_send_stats(self);
-                break;
-            }
-            case CAPTCHA_MATH: {
-                captcha_server_send_math_captcha(self);
-                break;
-            }
-            case CAPTCHA_EVEN_ODD: {
-                captcha_server_send_even_odd_captcha(self);
-                break;
-            }
-            case -1: {
-                break;
-            }
-            case 0: {
-                break;
-            }
-            default: {
-                fprintf(stderr, "Error: Invalid option code: %d\n", buffer);
-                break;
+            switch(buffer) {
+                case STATS: {
+                    captcha_server_send_stats(self);
+                    break;
+                }
+                case CAPTCHA_MATH: {
+                    captcha_server_send_math_captcha(self);
+                    break;
+                }
+                case CAPTCHA_EVEN_ODD: {
+                    captcha_server_send_even_odd_captcha(self);
+                    break;
+                }
+                case DISCONNECT: {
+                    disconnected = true;
+                    break;
+                }
+                case SERVER_SHUTDOWN: {
+                    return;
+                }
+                case -1: {
+                    disconnected = true;
+                    break;
+                }
+                case 0: {
+                    disconnected = true;
+                    break;
+                }
+                default: {
+                    fprintf(stderr, "Error: Invalid option code: %d\n", buffer);
+                    break;
+                }
             }
         }
     }
@@ -110,14 +123,14 @@ void captcha_server_send_math_captcha(CaptchaServer *self) {
     get_two_random_numbers(&num1, &num2);
     int math_captcha_result = num1 + num2;
 
-    size_t message_buffer_size = 10;
-    char message_buffer[message_buffer_size];
+    char message_buffer[MATH_BUFFER_SIZE] = { '\0' };
     sprintf(message_buffer, "%d + %d", num1, num2);
     send(self->incoming_socket, message_buffer, strlen(message_buffer), 0);
 
-    recv(self->incoming_socket, message_buffer, message_buffer_size, 0);
+    for (size_t i = 0; i < MATH_BUFFER_SIZE; i++) { message_buffer[i] = '\0'; }
+    recv(self->incoming_socket, message_buffer, MATH_BUFFER_SIZE, 0);
 
-    if (valid_number_format(message_buffer, message_buffer_size) &&
+    if (valid_number_format(message_buffer, MATH_BUFFER_SIZE) &&
         atoi(message_buffer) == math_captcha_result)
     {
         self->success_count += 1;

@@ -9,10 +9,7 @@
 
 ConnectBox connect_box_new() {
     ConnectBox connect_box;
-
     connect_box.box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 15);
-    gtk_widget_set_margin_top(connect_box.box, 30);
-    gtk_widget_set_margin_bottom(connect_box.box, 30);
 
     connect_box.connect_label = gtk_label_new(NULL);
     gtk_widget_set_halign(connect_box.connect_label, GTK_ALIGN_CENTER);
@@ -60,10 +57,7 @@ ConnectBox connect_box_new() {
 
 CaptchaSelectBox captcha_select_box_new() {
     CaptchaSelectBox captcha_select_box;
-
     captcha_select_box.box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 15);
-    gtk_widget_set_margin_top(captcha_select_box.box, 30);
-    gtk_widget_set_margin_bottom(captcha_select_box.box, 30);
 
     captcha_select_box.stat_label = gtk_label_new(NULL);
     gtk_widget_set_halign(captcha_select_box.stat_label, GTK_ALIGN_CENTER);
@@ -92,18 +86,77 @@ void captcha_select_box_set_stat_string(CaptchaSelectBox *self, const char *stat
     gtk_label_set_text(GTK_LABEL(self->stat_label), stat_string);
 }
 
+void captcha_addition_box_set_task(CaptchaAdditionBox *self, const char *task) {
+    gtk_label_set_text(GTK_LABEL(self->task_label), task);
+}
+
+CaptchaAdditionBox captcha_addition_box_new() {
+    CaptchaAdditionBox captcha_addition_box;
+    captcha_addition_box.box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 15);
+
+    captcha_addition_box.task_label = gtk_label_new(NULL);
+    captcha_addition_box.answer_spin_button = gtk_spin_button_new_with_range(0, 65536, 1);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(captcha_addition_box.answer_spin_button), 0);
+    captcha_addition_box.submit_button = gtk_button_new_with_label("Submit");
+
+    gtk_widget_set_halign(captcha_addition_box.task_label, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(captcha_addition_box.answer_spin_button, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(captcha_addition_box.submit_button, GTK_ALIGN_CENTER);
+
+    gtk_box_append(GTK_BOX(captcha_addition_box.box), captcha_addition_box.task_label);
+    gtk_box_append(GTK_BOX(captcha_addition_box.box), captcha_addition_box.answer_spin_button);
+    gtk_box_append(GTK_BOX(captcha_addition_box.box), captcha_addition_box.submit_button);
+
+    return captcha_addition_box;
+}
+
+CaptchaResultBox captcha_result_box_new() {
+    CaptchaResultBox captcha_result_box;
+    captcha_result_box.box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 30);
+
+    captcha_result_box.result_label = gtk_label_new(NULL);
+    captcha_result_box.back_button = gtk_button_new_with_label("Back");
+    gtk_widget_set_halign(captcha_result_box.result_label, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(captcha_result_box.back_button, GTK_ALIGN_CENTER);
+
+    gtk_box_append(GTK_BOX(captcha_result_box.box), captcha_result_box.result_label);
+    gtk_box_append(GTK_BOX(captcha_result_box.box), captcha_result_box.back_button);
+
+    return captcha_result_box;
+}
+
+void captcha_result_box_set_result(CaptchaResultBox *self, const char *result) {
+    gtk_label_set_text(GTK_LABEL(self->result_label), result);
+}
+
 MainWindow main_window_new(GtkApplication *app) {
     MainWindow main_window;
 
+    main_window.captcha_in_progress = false;
     main_window.window = gtk_application_window_new(app);
     main_window.main_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 15);
+    gtk_widget_set_margin_top(main_window.main_box, 30);
+    gtk_widget_set_margin_bottom(main_window.main_box, 30);
+
+    main_window.close_blocked_label = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(main_window.close_blocked_label),
+                         "<span color=\"red\">Please complete the captcha.</span>");
+    gtk_widget_set_halign(main_window.close_blocked_label, GTK_ALIGN_CENTER);
+    gtk_widget_set_visible(main_window.close_blocked_label, false);
 
     main_window.connect_box = connect_box_new();
     main_window.captcha_select_box = captcha_select_box_new();
     gtk_widget_set_visible(main_window.captcha_select_box.box, false);
+    main_window.captcha_addition_box = captcha_addition_box_new();
+    gtk_widget_set_visible(main_window.captcha_addition_box.box, false);
+    main_window.captcha_result_box = captcha_result_box_new();
+    gtk_widget_set_visible(main_window.captcha_result_box.box, false);
 
+    gtk_box_append(GTK_BOX(main_window.main_box), main_window.close_blocked_label);
     gtk_box_append(GTK_BOX(main_window.main_box), main_window.connect_box.box);
     gtk_box_append(GTK_BOX(main_window.main_box), main_window.captcha_select_box.box);
+    gtk_box_append(GTK_BOX(main_window.main_box), main_window.captcha_addition_box.box);
+    gtk_box_append(GTK_BOX(main_window.main_box), main_window.captcha_result_box.box);
 
     gtk_window_set_child(GTK_WINDOW(main_window.window), main_window.main_box);
     gtk_window_set_title(GTK_WINDOW(main_window.window), "Captcha Client");
@@ -114,6 +167,30 @@ MainWindow main_window_new(GtkApplication *app) {
 
 void main_window_present(const MainWindow *self) {
     gtk_window_present(GTK_WINDOW(self->window));
+}
+
+void main_window_show_captcha_select(MainWindow *self) {
+    gtk_widget_set_visible(self->connect_box.box, false);
+    gtk_widget_set_visible(self->captcha_result_box.box, false);
+    gtk_widget_set_visible(self->captcha_select_box.box, true);
+
+    char message = STATS;
+    send(self->client.client_socket, &message, 1, 0);
+    char response_buffer[30] = { '\0' };
+    recv(self->client.client_socket, response_buffer, 30, 0);
+
+    gtk_label_set_text(GTK_LABEL(self->captcha_select_box.stat_label), response_buffer);
+}
+
+void main_window_show_captcha_addition(MainWindow *self) {
+    gtk_widget_set_visible(self->captcha_select_box.box, false);
+    gtk_widget_set_visible(self->captcha_addition_box.box, true);
+}
+
+void main_window_show_captcha_result(MainWindow *self) {
+    gtk_widget_set_visible(self->close_blocked_label, false);
+    gtk_widget_set_visible(self->captcha_addition_box.box, false);
+    gtk_widget_set_visible(self->captcha_result_box.box, true);
 }
 
 void main_window_on_connect_button_clicked(GtkButton *self, gpointer *user_data) {
@@ -140,14 +217,51 @@ void main_window_on_connect_button_clicked(GtkButton *self, gpointer *user_data)
     }
 }
 
-void main_window_show_captcha_select(MainWindow *self) {
-    gtk_widget_set_visible(self->connect_box.box, false);
-    gtk_widget_set_visible(self->captcha_select_box.box, true);
+void main_window_on_captcha_addition_button_clicked(GtkButton *self, gpointer *user_data) {
+    MainWindow *main_window = (MainWindow *)user_data;
 
-    char message = STATS;
-    send(self->client.client_socket, &message, 1, 0);
-    char response_buffer[30];
-    recv(self->client.client_socket, response_buffer, 30, 0);
+    char message = CAPTCHA_MATH;
+    send(main_window->client.client_socket, &message, 1, 0);
+    char response_buffer[10] = { '\0' };
+    recv(main_window->client.client_socket, response_buffer, 10, 0);
 
-    gtk_label_set_text(GTK_LABEL(self->captcha_select_box.stat_label), response_buffer);
+    captcha_addition_box_set_task(&(main_window->captcha_addition_box), response_buffer);
+    main_window_show_captcha_addition(main_window);
+    main_window->captcha_in_progress = true;
+}
+
+void main_window_on_captcha_addition_submit_button_clicked(GtkButton *self, gpointer *user_data) {
+    MainWindow *main_window = (MainWindow *)user_data;
+
+    uint16_t answer = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(
+                                                       main_window->captcha_addition_box.
+                                                       answer_spin_button));
+
+    char message[6] = { '\0' };
+    sprintf(message, "%d", answer);
+    send(main_window->client.client_socket, message, strlen(message), 0);
+
+    char response_buffer[10] = { '\0' };
+    recv(main_window->client.client_socket, response_buffer, 10, 0);
+
+    captcha_result_box_set_result(&(main_window->captcha_result_box), response_buffer);
+    main_window_show_captcha_result(main_window);
+    main_window->captcha_in_progress = false;
+}
+
+void main_window_on_captcha_result_back_button_clicked(GtkButton *self, gpointer *user_data) {
+    MainWindow *main_window = (MainWindow *)user_data;
+
+    main_window_show_captcha_select(main_window);
+}
+
+gboolean main_window_on_close_request(GtkWindow *self, gpointer *user_data) {
+    MainWindow *main_window = (MainWindow *)user_data;
+
+    if (main_window->captcha_in_progress) {
+        gtk_widget_set_visible(main_window->close_blocked_label, true);
+        return true;
+    }
+
+    return false;
 }
