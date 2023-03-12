@@ -23,10 +23,13 @@ typedef struct {
     const char *fail_message;
 } CaptchaServer;
 
-CaptchaServer captcha_server_new(const char *address, int port);
+typedef enum { QUIT, STATS, CAPTCHA_MATH, CAPTCHA_EVEN_ODD } REQUEST_TYPE ;
 
+CaptchaServer captcha_server_new(const char *address, int port);
+void captcha_server_run(CaptchaServer *self);
 bool captcha_server_accept(CaptchaServer *self);
 void captcha_server_send_math_captcha(CaptchaServer *self);
 void captcha_server_send_even_odd_captcha(CaptchaServer *self);
+void captcha_server_send_stats(const CaptchaServer *self);
 void captcha_server_write_stats_to_file(const CaptchaServer *self);
 void captcha_server_load_stats_from_file(CaptchaServer *self);

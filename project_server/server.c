@@ -50,15 +50,40 @@ CaptchaServer captcha_server_new(const char *address, int port) {
     server.fail_message = "Failed";
     captcha_server_load_stats_from_file(&server);
 
-    printf("Success: %d\nFailed: %d\n", server.success_count, server.fail_count);
-
     return server;
+}
+
+void captcha_server_run(CaptchaServer *self) {
+    while (captcha_server_accept(self)) {
+        char buffer;
+        recv(self->incoming_socket, &buffer, 1, 0);
+
+        switch(buffer) {
+            case QUIT: return;
+            case STATS: {
+                captcha_server_send_stats(self);
+                break;
+            }
+            case CAPTCHA_MATH: {
+                captcha_server_send_math_captcha(self);
+                break;
+            }
+            case CAPTCHA_EVEN_ODD: {
+                captcha_server_send_even_odd_captcha(self);
+                break;
+            }
+            default: {
+                fprintf(stderr, "Error: Invalid option code: %d", buffer);
+                break;
+            }
+        }
+    }
 }
 
 bool captcha_server_accept(CaptchaServer *self) {
     self->incoming_socket = accept(self->server_socket,
-                                     (struct sockaddr *)&self->incoming_address,
-                                     &self->size_of_incoming_address);
+                                   (struct sockaddr *)&self->incoming_address,
+                                   &self->size_of_incoming_address);
 
     if (self->incoming_socket == -1) {
         self->connection_is_active = false;
@@ -146,6 +171,12 @@ void captcha_server_send_even_odd_captcha(CaptchaServer *self) {
     send(self->incoming_socket, self->success_message, strlen(self->success_message), 0);
 
     free(response_buffer);
+}
+
+void captcha_server_send_stats(const CaptchaServer *self) {
+    char message[30];
+    sprintf(message, "Success: %d\nFailed: %d\n", self->success_count, self->fail_count);
+    send(self->incoming_socket, message, strlen(message), 0);
 }
 
 void captcha_server_write_stats_to_file(const CaptchaServer *self) {

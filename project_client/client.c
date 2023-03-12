@@ -37,6 +37,10 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    char operation = getchar() - 48;
+    getchar(); // discard trailing newline
+    send(client_socket_descriptor, &operation, 1, 0);
+
     recv(client_socket_descriptor, buffer, BUFSIZE, 0);
     printf("%s\n", buffer);
 
