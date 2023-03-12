@@ -1,8 +1,15 @@
-// standard library
-#include <ctype.h>
+// basic includes
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
-// project
+// network includes
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+// project includes
 #include "server.h"
+#include "util_functions.h"
 
 CaptchaServer captcha_server_new(const char *address, int port) {
     CaptchaServer server;
@@ -37,60 +44,33 @@ CaptchaServer captcha_server_new(const char *address, int port) {
 
     server.size_of_incoming_address = sizeof(server.incoming_address);
     server.connection_is_active = false;
-    server.success_count = 0;
+
+    server.stat_file_path = "server_stats.txt";
     server.success_message = "Success";
-    server.fail_count = 0;
     server.fail_message = "Failed";
+    captcha_server_load_stats_from_file(&server);
+
+    printf("Success: %d\nFailed: %d\n", server.success_count, server.fail_count);
 
     return server;
 }
 
-bool captcha_server_accept(CaptchaServer *server) {
-    server->incoming_socket = accept(server->server_socket,
-                                     (struct sockaddr *)&server->incoming_address,
-                                     &server->size_of_incoming_address);
+bool captcha_server_accept(CaptchaServer *self) {
+    self->incoming_socket = accept(self->server_socket,
+                                     (struct sockaddr *)&self->incoming_address,
+                                     &self->size_of_incoming_address);
 
-    if (server->incoming_socket == -1) {
-        server->connection_is_active = false;
+    if (self->incoming_socket == -1) {
+        self->connection_is_active = false;
         return false;
     }
 
-    server->connection_is_active = true;
+    self->connection_is_active = true;
     return true;
 }
 
-static void get_two_random_numbers(uint8_t *num1, uint8_t *num2) {
-    FILE *rng = fopen("/dev/urandom", "r");
-
-    if (rng == NULL) {
-        fprintf(stderr, "Error: unable to open /dev/urandom");
-        fclose(rng);
-        exit(EXIT_FAILURE);
-    }
-
-    *num1 = fgetc(rng);
-    *num2 = fgetc(rng);
-    fclose(rng);
-}
-
-static bool valid_number_format(const char *str, size_t len) {
-    bool valid_format = true;
-
-    for (size_t i = 0; i < len; i++) {
-        if (str[i] == '\0') {
-            break;
-        }
-        if (!isdigit(str[i])) {
-            valid_format = false;
-            break;
-        }
-    }
-
-    return valid_format;
-}
-
-void captcha_server_send_math_captcha(CaptchaServer *server) {
-    if (!server->connection_is_active) {
+void captcha_server_send_math_captcha(CaptchaServer *self) {
+    if (!self->connection_is_active) {
         fprintf(stderr, "Error: Trying to send captcha while no connection is active");
         exit(EXIT_FAILURE);
     }
@@ -102,20 +82,67 @@ void captcha_server_send_math_captcha(CaptchaServer *server) {
     size_t message_buffer_size = 10;
     char message_buffer[message_buffer_size];
     sprintf(message_buffer, "%d + %d", num1, num2);
-    send(server->incoming_socket, message_buffer, strlen(message_buffer), 0);
+    send(self->incoming_socket, message_buffer, strlen(message_buffer), 0);
 
-    recv(server->incoming_socket, message_buffer, message_buffer_size, 0);
+    recv(self->incoming_socket, message_buffer, message_buffer_size, 0);
 
     if (valid_number_format(message_buffer, message_buffer_size) &&
         atoi(message_buffer) == math_captcha_result)
     {
-        server->success_count += 1;
-        send(server->incoming_socket, server->success_message, strlen(server->success_message), 0);
+        self->success_count += 1;
+        captcha_server_write_stats_to_file(self);
+        send(self->incoming_socket, self->success_message, strlen(self->success_message), 0);
     }
     else {
-        server->fail_count += 1;
-        send(server->incoming_socket, server->fail_message, strlen(server->fail_message), 0);
+        self->fail_count += 1;
+        captcha_server_write_stats_to_file(self);
+        send(self->incoming_socket, self->fail_message, strlen(self->fail_message), 0);
     }
 }
 
+void captcha_server_write_stats_to_file(const CaptchaServer *self) {
+    FILE *stat_file = fopen(self->stat_file_path, "w");
+    if (stat_file == NULL) {
+        fprintf(stderr, "Error: Unable to write to stat file: %s\n", self->stat_file_path);
+        fclose(stat_file);
+        return;
+    }
 
+    fprintf(stat_file, "%d\n%d", self->success_count, self->fail_count);
+    fclose(stat_file);
+}
+
+void captcha_server_load_stats_from_file(CaptchaServer *self) {
+    FILE *stat_file = fopen(self->stat_file_path, "r");
+    if (stat_file == NULL) {
+        self->success_count = 0;
+        self->fail_count = 0;
+    }
+    else {
+        // 4-bit int value is a maximum of 10 decimal digits
+        char buffer[11];
+        size_t len;
+
+        fgets(buffer, 11, stat_file);
+        len = strlen(buffer);
+        remove_trailing_newline(buffer, len);
+        if (valid_number_format(buffer, strlen(buffer))) {
+            self->success_count = atoi(buffer);
+        }
+        else {
+            fprintf(stderr, "Error: Corrupted stat file: %s\n", self->stat_file_path);
+            exit(EXIT_FAILURE);
+        }
+
+        fgets(buffer, 11, stat_file);
+        len = strlen(buffer);
+        remove_trailing_newline(buffer, len);
+        if (valid_number_format(buffer, len)) {
+            self->fail_count = atoi(buffer);
+        }
+        else {
+            fprintf(stderr, "Error: Corrupted stat file: %s\n", self->stat_file_path);
+            exit(EXIT_FAILURE);
+        }
+    }
+}

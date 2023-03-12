@@ -1,14 +1,10 @@
 #pragma once
 
 // basic includes
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 // network includes
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 
 typedef struct {
@@ -20,14 +16,16 @@ typedef struct {
     socklen_t size_of_incoming_address;
     bool connection_is_active;
 
-    int success_count;
+    const char *stat_file_path;
+    uint32_t success_count;
     const char *success_message;
-    int fail_count;
+    uint32_t fail_count;
     const char *fail_message;
 } CaptchaServer;
 
 CaptchaServer captcha_server_new(const char *address, int port);
 
-bool captcha_server_accept(CaptchaServer *server);
-
-void captcha_server_send_math_captcha(CaptchaServer *server);
+bool captcha_server_accept(CaptchaServer *self);
+void captcha_server_send_math_captcha(CaptchaServer *self);
+void captcha_server_write_stats_to_file(const CaptchaServer *self);
+void captcha_server_load_stats_from_file(CaptchaServer *self);
