@@ -31,11 +31,11 @@ void main_window_show_captcha_choose(MainWindow *self);
 void main_window_show_captcha_addition(MainWindow *self);
 void main_window_show_captcha_selection(MainWindow *self);
 void main_window_show_captcha_result(MainWindow *self);
-void main_window_on_connect_button_clicked(GtkButton *self, gpointer *user_data);
-void main_window_on_captcha_addition_button_clicked(GtkButton *self, gpointer *user_data);
-void main_window_on_captcha_selection_button_clicked(GtkButton *self, gpointer *user_data);
-void main_window_on_captcha_addition_submit_button_clicked(GtkButton *self, gpointer *user_data);
-void main_window_on_captcha_selection_submit_button_clicked(GtkButton *self, gpointer *user_data);
-void main_window_on_captcha_result_back_button_clicked(GtkButton *self, gpointer *user_data);
+void main_window_on_connect_button_clicked(GtkButton *button, gpointer *user_data);
+void main_window_on_captcha_addition_button_clicked(GtkButton *button, gpointer *user_data);
+void main_window_on_captcha_selection_button_clicked(GtkButton *button, gpointer *user_data);
+void main_window_on_captcha_addition_submit_button_clicked(GtkButton *button, gpointer *user_data);
+void main_window_on_captcha_selection_submit_button_clicked(GtkButton *button, gpointer *user_data);
+void main_window_on_captcha_result_back_button_clicked(GtkButton *button, gpointer *user_data);
 
-gboolean main_window_on_close_request(GtkWindow *self, gpointer *user_data);
+gboolean main_window_on_close_request(GtkWindow *window, gpointer *user_data);

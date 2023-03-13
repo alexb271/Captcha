@@ -77,105 +77,105 @@ void main_window_show_captcha_result(MainWindow *self) {
     gtk_widget_set_visible(self->captcha_result_box.box, true);
 }
 
-void main_window_on_connect_button_clicked(GtkButton *self, gpointer *user_data) {
-    MainWindow *main_window = (MainWindow *)user_data;
+void main_window_on_connect_button_clicked(GtkButton *button, gpointer *user_data) {
+    MainWindow *self = (MainWindow *)user_data;
 
     int port = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(
-                                                main_window->connect_box.port_spin_button));
+                                                self->connect_box.port_spin_button));
     const char* ip_addr_str = gtk_editable_get_text(GTK_EDITABLE(
-                                                    main_window->connect_box.ip_addr_entry));
+                                                    self->connect_box.ip_addr_entry));
     if (ip_addr_str == NULL || inet_addr(ip_addr_str) == -1) {
-        gtk_widget_set_visible(main_window->connect_box.format_error_label, true);
-        gtk_widget_set_visible(main_window->connect_box.connection_error_label, false);
+        gtk_widget_set_visible(self->connect_box.format_error_label, true);
+        gtk_widget_set_visible(self->connect_box.connection_error_label, false);
         return;
     }
     else {
-        main_window->client = captcha_client_new(ip_addr_str, port);
-        if (main_window->client.connected) {
-            main_window_show_captcha_choose(main_window);
+        self->client = captcha_client_new(ip_addr_str, port);
+        if (self->client.connected) {
+            main_window_show_captcha_choose(self);
         }
         else {
-            gtk_widget_set_visible(main_window->connect_box.format_error_label, false);
-            gtk_widget_set_visible(main_window->connect_box.connection_error_label, true);
+            gtk_widget_set_visible(self->connect_box.format_error_label, false);
+            gtk_widget_set_visible(self->connect_box.connection_error_label, true);
         }
     }
 }
 
-void main_window_on_captcha_addition_button_clicked(GtkButton *self, gpointer *user_data) {
-    MainWindow *main_window = (MainWindow *)user_data;
+void main_window_on_captcha_addition_button_clicked(GtkButton *button, gpointer *user_data) {
+    MainWindow *self = (MainWindow *)user_data;
 
     char message = CAPTCHA_MATH;
-    captcha_client_send(&main_window->client, &message, 1);
+    captcha_client_send(&self->client, &message, 1);
     char response_buffer[10] = { '\0' };
-    captcha_client_receive(&main_window->client, response_buffer, 10);
+    captcha_client_receive(&self->client, response_buffer, 10);
 
-    captcha_addition_box_set_task(&(main_window->captcha_addition_box), response_buffer);
-    main_window_show_captcha_addition(main_window);
-    main_window->captcha_in_progress = true;
+    captcha_addition_box_set_task(&(self->captcha_addition_box), response_buffer);
+    main_window_show_captcha_addition(self);
+    self->captcha_in_progress = true;
 }
 
-void main_window_on_captcha_selection_button_clicked(GtkButton *self, gpointer *user_data) {
-    MainWindow *main_window = (MainWindow *)user_data;
+void main_window_on_captcha_selection_button_clicked(GtkButton *button, gpointer *user_data) {
+    MainWindow *self = (MainWindow *)user_data;
 
     char message = CAPTCHA_EVEN_ODD;
-    captcha_client_send(&main_window->client, &message, 1);
+    captcha_client_send(&self->client, &message, 1);
 
     // every number is max 3 characters plus a comma, which is 4.
     char response_buffer[(CAPTCHA_SELECTION_NUMBERS_COUNT * 4) + 1];
-    captcha_client_receive(&main_window->client, response_buffer,
+    captcha_client_receive(&self->client, response_buffer,
                            (CAPTCHA_SELECTION_NUMBERS_COUNT * 4) + 1);
 
-    captcha_selection_box_set_numbers_from_str(&main_window->captcha_selection_box, response_buffer);
-    main_window_show_captcha_selection(main_window);
-    main_window->captcha_in_progress = true;
+    captcha_selection_box_set_numbers_from_str(&self->captcha_selection_box, response_buffer);
+    main_window_show_captcha_selection(self);
+    self->captcha_in_progress = true;
 }
 
-void main_window_on_captcha_addition_submit_button_clicked(GtkButton *self, gpointer *user_data) {
-    MainWindow *main_window = (MainWindow *)user_data;
+void main_window_on_captcha_addition_submit_button_clicked(GtkButton *button, gpointer *user_data) {
+    MainWindow *self = (MainWindow *)user_data;
 
     uint16_t answer = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(
-                                                       main_window->captcha_addition_box.
+                                                       self->captcha_addition_box.
                                                        answer_spin_button));
 
     char message[6] = { '\0' };
     sprintf(message, "%d", answer);
-    captcha_client_send(&main_window->client, message, strlen(message));
+    captcha_client_send(&self->client, message, strlen(message));
 
     char response_buffer[10] = { '\0' };
-    captcha_client_receive(&main_window->client, response_buffer, 10);
+    captcha_client_receive(&self->client, response_buffer, 10);
 
-    captcha_result_box_set_result(&(main_window->captcha_result_box), response_buffer);
-    main_window_show_captcha_result(main_window);
-    main_window->captcha_in_progress = false;
+    captcha_result_box_set_result(&(self->captcha_result_box), response_buffer);
+    main_window_show_captcha_result(self);
+    self->captcha_in_progress = false;
 }
 
-void main_window_on_captcha_selection_submit_button_clicked(GtkButton *self, gpointer *user_data) {
-    MainWindow *main_window = (MainWindow *)user_data;
+void main_window_on_captcha_selection_submit_button_clicked(GtkButton *button, gpointer *user_data) {
+    MainWindow *self = (MainWindow *)user_data;
 
-    const char *response = captcha_selection_box_get_states(&main_window->captcha_selection_box);
-    captcha_client_send(&main_window->client, response, strlen(response));
+    const char *response = captcha_selection_box_get_states(&self->captcha_selection_box);
+    captcha_client_send(&self->client, response, strlen(response));
 
     char response_buffer[10] = { '\0' };
-    recv(main_window->client.client_socket, response_buffer, 10, 0);
+    recv(self->client.client_socket, response_buffer, 10, 0);
 
-    captcha_result_box_set_result(&(main_window->captcha_result_box), response_buffer);
-    main_window_show_captcha_result(main_window);
-    main_window->captcha_in_progress = false;
+    captcha_result_box_set_result(&(self->captcha_result_box), response_buffer);
+    main_window_show_captcha_result(self);
+    self->captcha_in_progress = false;
 }
 
-void main_window_on_captcha_result_back_button_clicked(GtkButton *self, gpointer *user_data) {
-    MainWindow *main_window = (MainWindow *)user_data;
+void main_window_on_captcha_result_back_button_clicked(GtkButton *button, gpointer *user_data) {
+    MainWindow *self = (MainWindow *)user_data;
 
-    main_window_show_captcha_choose(main_window);
+    main_window_show_captcha_choose(self);
 }
 
-gboolean main_window_on_close_request(GtkWindow *self, gpointer *user_data) {
-    MainWindow *main_window = (MainWindow *)user_data;
+gboolean main_window_on_close_request(GtkWindow *window, gpointer *user_data) {
+    MainWindow *self = (MainWindow *)user_data;
 
-    if (main_window->captcha_in_progress) {
-        gtk_widget_set_visible(main_window->close_blocked_label, true);
-        return true;
+    if (self->captcha_in_progress) {
+        gtk_widget_set_visible(self->close_blocked_label, true);
+        return true; // request handled
     }
 
-    return false;
+    return false; // request will be propagated to further handlers
 }
