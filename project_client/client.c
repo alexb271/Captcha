@@ -5,6 +5,7 @@
 // network includes
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 // project includes
 #include "client.h"
