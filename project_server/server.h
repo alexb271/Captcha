@@ -27,7 +27,8 @@ typedef struct {
     const char *fail_message;
 } CaptchaServer;
 
-CaptchaServer captcha_server_new(const char *address, int port);
+CaptchaServer captcha_server_new(const char *address, int port,
+                                 const char *stat_file_path, const char *log_file_path);
 void captcha_server_run(CaptchaServer *self);
 bool captcha_server_accept(CaptchaServer *self);
 void captcha_server_send_math_captcha(CaptchaServer *self);

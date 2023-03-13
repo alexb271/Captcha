@@ -14,7 +14,9 @@
 
 #define MATH_BUFFER_SIZE 10
 
-CaptchaServer captcha_server_new(const char *address, int port) {
+CaptchaServer captcha_server_new(const char *address, int port,
+                                 const char *stat_file_path, const char *log_file_path)
+{
     CaptchaServer server;
 
     server.server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -48,8 +50,8 @@ CaptchaServer captcha_server_new(const char *address, int port) {
     server.size_of_incoming_address = sizeof(server.incoming_address);
     server.connection_is_active = false;
 
-    server.log_file_path = "server_log.txt";
-    server.stat_file_path = "server_stats.txt";
+    server.log_file_path = log_file_path;
+    server.stat_file_path = stat_file_path;
     server.success_message = "Success";
     server.fail_message = "Failed";
     captcha_server_load_stats_from_file(&server);
