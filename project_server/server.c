@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 // network includes
 #include <sys/socket.h>
@@ -47,6 +48,7 @@ CaptchaServer captcha_server_new(const char *address, int port) {
     server.size_of_incoming_address = sizeof(server.incoming_address);
     server.connection_is_active = false;
 
+    server.log_file_path = "server_log.txt";
     server.stat_file_path = "server_stats.txt";
     server.success_message = "Success";
     server.fail_message = "Failed";
@@ -139,6 +141,7 @@ void captcha_server_send_math_captcha(CaptchaServer *self) {
     }
     else {
         self->fail_count += 1;
+        captcha_server_log_event(self, "Unsuccesful attempt");
         captcha_server_write_stats_to_file(self);
         send(self->incoming_socket, self->fail_message, strlen(self->fail_message), 0);
     }
@@ -169,6 +172,7 @@ void captcha_server_send_even_odd_captcha(CaptchaServer *self) {
     for (size_t i = 0; i < CHALLANGE_SIZE; i++) {
         if (response_buffer[i] - 48 != challange.mask[i]) {
             self->fail_count += 1;
+            captcha_server_log_event(self, "Unsuccesful attempt");
             captcha_server_write_stats_to_file(self);
             send(self->incoming_socket, self->fail_message, strlen(self->fail_message), 0);
             return;
@@ -230,4 +234,21 @@ void captcha_server_load_stats_from_file(CaptchaServer *self) {
             exit(EXIT_FAILURE);
         }
     }
+}
+
+void captcha_server_log_event(const CaptchaServer *self, const char *event) {
+    FILE *log_file = fopen(self->log_file_path, "a");
+    if (log_file == NULL) {
+        fprintf(stderr, "Error: Unable to write to log file: %s\n", self->log_file_path);
+        fclose(log_file);
+        return;
+    }
+
+    time_t unix_time = time(NULL);
+    struct tm *lt = localtime(&unix_time);
+    fprintf(log_file, "%d %.2d %.2d %.2d:%.2d:%.2d %s\n",
+            1900 + lt->tm_year, lt->tm_mon, lt->tm_mday,
+            lt->tm_hour, lt->tm_min, lt->tm_sec, event);
+
+    fclose(log_file);
 }

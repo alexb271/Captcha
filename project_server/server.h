@@ -19,6 +19,7 @@ typedef struct {
     socklen_t size_of_incoming_address;
     bool connection_is_active;
 
+    const char *log_file_path;
     const char *stat_file_path;
     uint32_t success_count;
     const char *success_message;
@@ -34,3 +35,4 @@ void captcha_server_send_even_odd_captcha(CaptchaServer *self);
 void captcha_server_send_stats(const CaptchaServer *self);
 void captcha_server_write_stats_to_file(const CaptchaServer *self);
 void captcha_server_load_stats_from_file(CaptchaServer *self);
+void captcha_server_log_event(const CaptchaServer *self, const char *event);
