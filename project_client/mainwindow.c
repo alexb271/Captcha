@@ -1,8 +1,3 @@
-// network includes
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
 // project includes
 #include "mainwindow.h"
 #include "../project_server/request_type.h"
@@ -58,9 +53,9 @@ void main_window_show_captcha_choose(MainWindow *self) {
     gtk_widget_set_visible(self->captcha_choose_box.box, true);
 
     char message = STATS;
-    send(self->client.client_socket, &message, 1, 0);
+    captcha_client_send(&self->client, &message, 1);
     char response_buffer[30] = { '\0' };
-    recv(self->client.client_socket, response_buffer, 30, 0);
+    captcha_client_receive(&self->client, response_buffer, 30);
 
     captcha_choose_box_set_stat_string(&(self->captcha_choose_box), response_buffer);
 }
@@ -110,9 +105,9 @@ void main_window_on_captcha_addition_button_clicked(GtkButton *self, gpointer *u
     MainWindow *main_window = (MainWindow *)user_data;
 
     char message = CAPTCHA_MATH;
-    send(main_window->client.client_socket, &message, 1, 0);
+    captcha_client_send(&main_window->client, &message, 1);
     char response_buffer[10] = { '\0' };
-    recv(main_window->client.client_socket, response_buffer, 10, 0);
+    captcha_client_receive(&main_window->client, response_buffer, 10);
 
     captcha_addition_box_set_task(&(main_window->captcha_addition_box), response_buffer);
     main_window_show_captcha_addition(main_window);
@@ -123,12 +118,12 @@ void main_window_on_captcha_selection_button_clicked(GtkButton *self, gpointer *
     MainWindow *main_window = (MainWindow *)user_data;
 
     char message = CAPTCHA_EVEN_ODD;
-    send(main_window->client.client_socket, &message, 1, 0);
+    captcha_client_send(&main_window->client, &message, 1);
 
     // every number is max 3 characters plus a comma, which is 4.
     char response_buffer[(CAPTCHA_SELECTION_NUMBERS_COUNT * 4) + 1];
-    recv(main_window->client.client_socket, response_buffer,
-         (CAPTCHA_SELECTION_NUMBERS_COUNT * 4) + 1, 0);
+    captcha_client_receive(&main_window->client, response_buffer,
+                           (CAPTCHA_SELECTION_NUMBERS_COUNT * 4) + 1);
 
     captcha_selection_box_set_numbers_from_str(&main_window->captcha_selection_box, response_buffer);
     main_window_show_captcha_selection(main_window);
@@ -144,10 +139,10 @@ void main_window_on_captcha_addition_submit_button_clicked(GtkButton *self, gpoi
 
     char message[6] = { '\0' };
     sprintf(message, "%d", answer);
-    send(main_window->client.client_socket, message, strlen(message), 0);
+    captcha_client_send(&main_window->client, message, strlen(message));
 
     char response_buffer[10] = { '\0' };
-    recv(main_window->client.client_socket, response_buffer, 10, 0);
+    captcha_client_receive(&main_window->client, response_buffer, 10);
 
     captcha_result_box_set_result(&(main_window->captcha_result_box), response_buffer);
     main_window_show_captcha_result(main_window);
@@ -158,7 +153,7 @@ void main_window_on_captcha_selection_submit_button_clicked(GtkButton *self, gpo
     MainWindow *main_window = (MainWindow *)user_data;
 
     const char *response = captcha_selection_box_get_states(&main_window->captcha_selection_box);
-    send(main_window->client.client_socket, response, strlen(response), 0);
+    captcha_client_send(&main_window->client, response, strlen(response));
 
     char response_buffer[10] = { '\0' };
     recv(main_window->client.client_socket, response_buffer, 10, 0);

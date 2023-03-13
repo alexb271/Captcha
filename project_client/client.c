@@ -41,6 +41,14 @@ CaptchaClient captcha_client_new(const char *address, int port) {
     return client;
 }
 
+void captcha_client_send(const CaptchaClient *self, const char *message, size_t len) {
+    send(self->client_socket, message, len, 0);
+}
+
+void captcha_client_receive(const CaptchaClient *self, char *buffer, size_t len) {
+    recv(self->client_socket, buffer, len, 0);
+}
+
 void captcha_client_disconnect(CaptchaClient *self) {
     char message = DISCONNECT;
     send(self->client_socket, &message, 1, 0);

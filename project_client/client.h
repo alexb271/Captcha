@@ -15,4 +15,6 @@ typedef struct {
 } CaptchaClient;
 
 CaptchaClient captcha_client_new(const char *address, int port);
+void captcha_client_send(const CaptchaClient *self, const char *message, size_t len);
+void captcha_client_receive(const CaptchaClient *self, char *buffer, size_t len);
 void captcha_client_disconnect(CaptchaClient *self);
