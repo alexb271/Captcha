@@ -153,13 +153,7 @@ void captcha_server_send_even_odd_captcha(CaptchaServer *self) {
     EvenOddChallange challange = generate_even_odd_challange();
 
     // every number is max 3 characters plus a comma, which is 4.
-    size_t len = (CHALLANGE_SIZE * 4) + 1;
-    char *message = malloc(len);
-    message[0] = '\0';
-    if (message == NULL) {
-        fprintf(stderr, "Bad alloc\n");
-        exit(EXIT_FAILURE);
-    }
+    char message[(CHALLANGE_SIZE * 4) + 1] = { '\0' };
 
     char buffer[5];
     for (size_t i = 0; i < CHALLANGE_SIZE; i++) {
@@ -168,13 +162,8 @@ void captcha_server_send_even_odd_captcha(CaptchaServer *self) {
     }
 
     send(self->incoming_socket, message, strlen(message), 0);
-    free(message);
 
-    char *response_buffer = malloc(CHALLANGE_SIZE + 1);
-    if (response_buffer == NULL) {
-        fprintf(stderr, "Bad alloc\n");
-        exit(EXIT_FAILURE);
-    }
+    char response_buffer[CHALLANGE_SIZE + 1] = { '\0' };
 
     recv(self->incoming_socket, response_buffer, CHALLANGE_SIZE + 1, 0);
     for (size_t i = 0; i < CHALLANGE_SIZE; i++) {
@@ -182,14 +171,12 @@ void captcha_server_send_even_odd_captcha(CaptchaServer *self) {
             self->fail_count += 1;
             captcha_server_write_stats_to_file(self);
             send(self->incoming_socket, self->fail_message, strlen(self->fail_message), 0);
-            break;
+            return;
         }
     }
     self->success_count += 1;
     captcha_server_write_stats_to_file(self);
     send(self->incoming_socket, self->success_message, strlen(self->success_message), 0);
-
-    free(response_buffer);
 }
 
 void captcha_server_send_stats(const CaptchaServer *self) {
