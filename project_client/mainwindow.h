@@ -25,7 +25,7 @@ typedef struct {
     bool captcha_in_progress;
 } MainWindow;
 
-MainWindow main_window_new(GtkApplication *app);
+MainWindow *main_window_new(GtkApplication *app);
 void main_window_present(const MainWindow *self);
 void main_window_show_captcha_choose(MainWindow *self);
 void main_window_show_captcha_addition(MainWindow *self);

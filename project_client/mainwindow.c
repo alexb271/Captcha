@@ -2,43 +2,58 @@
 #include "mainwindow.h"
 #include "../project_server/request_type.h"
 
-MainWindow main_window_new(GtkApplication *app) {
-    MainWindow main_window;
+MainWindow *main_window_new(GtkApplication *app) {
+    MainWindow *main_window = g_malloc(sizeof(MainWindow));
 
-    main_window.captcha_in_progress = false;
-    main_window.window = gtk_application_window_new(app);
-    main_window.main_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 15);
-    gtk_widget_set_margin_top(main_window.main_box, 30);
-    gtk_widget_set_margin_bottom(main_window.main_box, 30);
-    gtk_widget_set_margin_start(main_window.main_box, 30);
-    gtk_widget_set_margin_end(main_window.main_box, 30);
+    main_window->captcha_in_progress = false;
+    main_window->window = gtk_application_window_new(app);
+    main_window->main_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 15);
+    gtk_widget_set_margin_top(main_window->main_box, 30);
+    gtk_widget_set_margin_bottom(main_window->main_box, 30);
+    gtk_widget_set_margin_start(main_window->main_box, 30);
+    gtk_widget_set_margin_end(main_window->main_box, 30);
 
-    main_window.close_blocked_label = gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(main_window.close_blocked_label),
+    main_window->close_blocked_label = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(main_window->close_blocked_label),
                          "<span color=\"red\">Please complete the captcha.</span>");
-    gtk_widget_set_halign(main_window.close_blocked_label, GTK_ALIGN_CENTER);
-    gtk_widget_set_visible(main_window.close_blocked_label, false);
+    gtk_widget_set_halign(main_window->close_blocked_label, GTK_ALIGN_CENTER);
+    gtk_widget_set_visible(main_window->close_blocked_label, false);
 
-    main_window.connect_box = connect_box_new();
-    main_window.captcha_choose_box = captcha_choose_box_new();
-    gtk_widget_set_visible(main_window.captcha_choose_box.box, false);
-    main_window.captcha_addition_box = captcha_addition_box_new();
-    gtk_widget_set_visible(main_window.captcha_addition_box.box, false);
-    main_window.captcha_selection_box = captcha_selection_box_new();
-    gtk_widget_set_visible(main_window.captcha_selection_box.box, false);
-    main_window.captcha_result_box = captcha_result_box_new();
-    gtk_widget_set_visible(main_window.captcha_result_box.box, false);
+    main_window->connect_box = connect_box_new();
+    main_window->captcha_choose_box = captcha_choose_box_new();
+    gtk_widget_set_visible(main_window->captcha_choose_box.box, false);
+    main_window->captcha_addition_box = captcha_addition_box_new();
+    gtk_widget_set_visible(main_window->captcha_addition_box.box, false);
+    main_window->captcha_selection_box = captcha_selection_box_new();
+    gtk_widget_set_visible(main_window->captcha_selection_box.box, false);
+    main_window->captcha_result_box = captcha_result_box_new();
+    gtk_widget_set_visible(main_window->captcha_result_box.box, false);
 
-    gtk_box_append(GTK_BOX(main_window.main_box), main_window.close_blocked_label);
-    gtk_box_append(GTK_BOX(main_window.main_box), main_window.connect_box.box);
-    gtk_box_append(GTK_BOX(main_window.main_box), main_window.captcha_choose_box.box);
-    gtk_box_append(GTK_BOX(main_window.main_box), main_window.captcha_addition_box.box);
-    gtk_box_append(GTK_BOX(main_window.main_box), main_window.captcha_selection_box.box);
-    gtk_box_append(GTK_BOX(main_window.main_box), main_window.captcha_result_box.box);
+    gtk_box_append(GTK_BOX(main_window->main_box), main_window->close_blocked_label);
+    gtk_box_append(GTK_BOX(main_window->main_box), main_window->connect_box.box);
+    gtk_box_append(GTK_BOX(main_window->main_box), main_window->captcha_choose_box.box);
+    gtk_box_append(GTK_BOX(main_window->main_box), main_window->captcha_addition_box.box);
+    gtk_box_append(GTK_BOX(main_window->main_box), main_window->captcha_selection_box.box);
+    gtk_box_append(GTK_BOX(main_window->main_box), main_window->captcha_result_box.box);
 
-    gtk_window_set_child(GTK_WINDOW(main_window.window), main_window.main_box);
-    gtk_window_set_title(GTK_WINDOW(main_window.window), "Captcha Client");
-    gtk_window_set_default_size(GTK_WINDOW(main_window.window), 400, 300);
+    gtk_window_set_child(GTK_WINDOW(main_window->window), main_window->main_box);
+    gtk_window_set_title(GTK_WINDOW(main_window->window), "Captcha Client");
+    gtk_window_set_default_size(GTK_WINDOW(main_window->window), 400, 300);
+
+    g_signal_connect(main_window->connect_box.connect_button, "clicked",
+                     G_CALLBACK(main_window_on_connect_button_clicked), main_window);
+    g_signal_connect(main_window->captcha_choose_box.captcha_button_addition, "clicked",
+                     G_CALLBACK(main_window_on_captcha_addition_button_clicked), main_window);
+    g_signal_connect(main_window->captcha_choose_box.captcha_button_selection, "clicked",
+                     G_CALLBACK(main_window_on_captcha_selection_button_clicked), main_window);
+    g_signal_connect(main_window->captcha_addition_box.submit_button, "clicked",
+                     G_CALLBACK(main_window_on_captcha_addition_submit_button_clicked), main_window);
+    g_signal_connect(main_window->captcha_selection_box.submit_button, "clicked",
+                     G_CALLBACK(main_window_on_captcha_selection_submit_button_clicked), main_window);
+    g_signal_connect(main_window->captcha_result_box.back_button, "clicked",
+                     G_CALLBACK(main_window_on_captcha_result_back_button_clicked), main_window);
+    g_signal_connect(main_window->window, "close-request",
+                     G_CALLBACK(main_window_on_close_request), main_window);
 
     return main_window;
 }
@@ -57,7 +72,7 @@ void main_window_show_captcha_choose(MainWindow *self) {
     char response_buffer[30] = { '\0' };
     captcha_client_receive(&self->client, response_buffer, 30);
 
-    captcha_choose_box_set_stat_string(&(self->captcha_choose_box), response_buffer);
+    captcha_choose_box_set_stat_string(&self->captcha_choose_box, response_buffer);
 }
 
 void main_window_show_captcha_addition(MainWindow *self) {
@@ -109,7 +124,7 @@ void main_window_on_captcha_addition_button_clicked(GtkButton *button, gpointer 
     char response_buffer[10] = { '\0' };
     captcha_client_receive(&self->client, response_buffer, 10);
 
-    captcha_addition_box_set_task(&(self->captcha_addition_box), response_buffer);
+    captcha_addition_box_set_task(&self->captcha_addition_box, response_buffer);
     main_window_show_captcha_addition(self);
     self->captcha_in_progress = true;
 }
@@ -144,7 +159,7 @@ void main_window_on_captcha_addition_submit_button_clicked(GtkButton *button, gp
     char response_buffer[10] = { '\0' };
     captcha_client_receive(&self->client, response_buffer, 10);
 
-    captcha_result_box_set_result(&(self->captcha_result_box), response_buffer);
+    captcha_result_box_set_result(&self->captcha_result_box, response_buffer);
     main_window_show_captcha_result(self);
     self->captcha_in_progress = false;
 }
@@ -158,7 +173,7 @@ void main_window_on_captcha_selection_submit_button_clicked(GtkButton *button, g
     char response_buffer[10] = { '\0' };
     recv(self->client.client_socket, response_buffer, 10, 0);
 
-    captcha_result_box_set_result(&(self->captcha_result_box), response_buffer);
+    captcha_result_box_set_result(&self->captcha_result_box, response_buffer);
     main_window_show_captcha_result(self);
     self->captcha_in_progress = false;
 }
@@ -177,5 +192,6 @@ gboolean main_window_on_close_request(GtkWindow *window, gpointer *user_data) {
         return true; // request handled
     }
 
+    captcha_client_disconnect(&self->client);
     return false; // request will be propagated to further handlers
 }
